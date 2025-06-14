@@ -1,0 +1,87 @@
+import csv
+from fpdf import FPDF
+
+filename = "data.csv"
+
+class PDF(FPDF):
+    def header(self):
+        self.set_font("Arial", "B", 14)
+        self.cell(0, 10, "Student Performance Report", ln=True, align="C")
+
+    def student_details(self, name, subject, score, grade, attendance):
+        self.set_font("Arial", size=12)
+        self.ln(10)
+        self.cell(0, 10, f"Name: {name}", ln=True)
+        self.cell(0, 10, f"Subject: {subject}", ln=True)
+        self.cell(0, 10, f"Score: {score}", ln=True)
+        self.cell(0, 10, f"Grade: {grade}", ln=True)
+        self.cell(0, 10, f"Attendance: {attendance}%", ln=True)
+
+    def class_summary(self, avg_score, avg_attendance, total_students, top_students):
+        self.add_page()
+        self.set_font("Arial", "B", 14)
+        self.cell(0, 10, "Class Summary", ln=True, align="C")
+        self.set_font("Arial", size=12)
+        self.ln(10)
+        self.cell(0, 10, f"Total Students: {total_students}", ln=True)
+        self.cell(0, 10, f"Average Score: {avg_score:.2f}", ln=True)
+        self.cell(0, 10, f"Average Attendance: {avg_attendance:.2f}%", ln=True)
+        self.cell(0, 10, "Top Performer(s):", ln=True)
+        for student in top_students:
+            self.cell(0, 10, f" - {student}", ln=True)
+
+# Read CSV and gather data
+data = []
+total_score = 0
+total_attendance = 0
+max_score = -1
+top_students = []
+
+with open(filename, newline='') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        score = float(row["Score"])
+        attendance = float(row["Attendance(%)"])
+        name = row["Name"]
+
+        data.append({
+            "name": name,
+            "subject": row["Subject"],
+            "score": score,
+            "grade": row["Grade"],
+            "attendance": attendance
+        })
+
+        total_score += score
+        total_attendance += attendance
+
+        if score > max_score:
+            max_score = score
+            top_students = [name]
+        elif score == max_score:
+            top_students.append(name)
+
+# Create PDF
+pdf = PDF()
+pdf.add_page()
+
+# Add student details
+for student in data:
+    pdf.student_details(
+        name=student["name"],
+        subject=student["subject"],
+        score=student["score"],
+        grade=student["grade"],
+        attendance=student["attendance"]
+    )
+
+# Add summary
+avg_score = total_score / len(data)
+avg_attendance = total_attendance / len(data)
+pdf.class_summary(avg_score, avg_attendance, len(data), top_students)
+
+# Save PDF
+pdf.output("final_report.pdf")
+print("PDF report generated: final_report.pdf")
+
+
