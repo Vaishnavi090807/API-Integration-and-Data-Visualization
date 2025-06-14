@@ -1,0 +1,52 @@
+import requests
+import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Page setup
+st.set_page_config(page_title="Weather Forecast Dashboard", layout="wide")
+st.title("🌤️ 5-Day Weather Forecast Dashboard")
+
+# User input
+city = st.text_input("Enter city name (e.g., visakhapatnam,in):", value="visakhapatnam,in")
+
+if city:
+    # Fetch weather data
+    API_KEY = "d17262a0ab8a06e514ba76f77a88ec36"
+    URL = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
+    response = requests.get(URL)
+    data = response.json()
+
+    if response.status_code != 200 or "list" not in data:
+        st.error(f"Error fetching data: {data.get('message', 'Unknown error')}")
+    else:
+        temperatures = []
+        timestamps = []
+        humidity = []
+        descriptions = []
+
+        for forecast in data["list"]:
+            temperatures.append(forecast["main"]["temp"])
+            humidity.append(forecast["main"]["humidity"])
+            timestamps.append(forecast["dt_txt"])
+            descriptions.append(forecast["weather"][0]["description"].title())
+
+        # Create temperature line plot
+        sns.set(style="darkgrid")
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(timestamps[:10], temperatures[:10], marker="o", color="teal", label="Temperature (°C)")
+        ax.set_xticklabels(timestamps[:10], rotation=45, ha="right")
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Temperature (°C)")
+        ax.set_title(f"Upcoming Temperatures in {city}")
+        ax.legend()
+        st.pyplot(fig)
+
+        # Show table with extra weather data
+        st.subheader("Forecast Data")
+        st.dataframe({
+            "Time": timestamps[:10],
+            "Temperature (°C)": temperatures[:10],
+            "Humidity (%)": humidity[:10],
+            "Weather": descriptions[:10]
+        })
